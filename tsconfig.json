@@ -1,16 +1,22 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "lib": ["ESNext"],
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "target": "ES2015",
+    "lib": ["ESNext", "DOM"],
+    "experimentalDecorators": true,
+    "baseUrl": "./",
+    "module": "ES2015",
+    "moduleResolution": "node",
     "resolveJsonModule": true,
+    "allowJs": false,
     "strict": true,
-    "strictNullChecks": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "verbatimModuleSyntax": true,
-    "skipDefaultLibCheck": true,
-    "skipLibCheck": true
+    "strictNullChecks": false,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "outDir": "dist",
+    "removeComments": true,
+    "sourceMap": true,
+    "allowSyntheticDefaultImports": true
   }
 }
