@@ -1,19 +1,11 @@
 import type { IEditorMoveEvent, IEditorRotateEvent, IEditorScaleEvent, IEditPoint } from '@leafer-in/interface'
 import type { RotateEvent } from '@leafer-ui/core'
-import type { IAlign, IImage, IPointData } from '@leafer-ui/interface'
+import type { IAlign, IImage, IPointData, IUI } from '@leafer-ui/interface'
 import type { ClipImage } from '../ui/ClipImage'
-import { EditDataHelper, InnerEditor, registerInnerEditor } from '@leafer-in/editor'
-import {
-  AroundHelper,
-  Box,
-  DragEvent,
-  LeafHelper,
-  MathHelper,
-  MoveEvent,
-  PointerEvent,
-  PointHelper,
-} from '@leafer-ui/core'
+import { InnerEditor, registerInnerEditor } from '@leafer-in/editor'
+import { Box, DragEvent, LeafHelper, MathHelper, MoveEvent, PointerEvent } from '@leafer-ui/core'
 import { EditBox } from './display/EditBox'
+import { EditDataHelper } from './tool/EditDataHelper'
 
 @registerInnerEditor()
 export class ClipResizeEditor extends InnerEditor {
@@ -41,8 +33,19 @@ export class ClipResizeEditor extends InnerEditor {
   // 编辑器
   myEditBox = new EditBox(this)
 
+  // 关闭键盘监听后的恢复函数
+  recoveryKeyEventFun = () => {}
+
   constructor(props: any) {
     super(props)
+
+    // 如果开启了键盘监听，则暂时关闭
+    if (this.editor.config.keyEvent) {
+      this.editor.config.keyEvent = false
+      this.recoveryKeyEventFun = () => {
+        this.editor.config.keyEvent = true
+      }
+    }
 
     this.eventIds = [
       this.editor.app.on_(PointerEvent.DOUBLE_TAP, ({ target }: PointerEvent) => {
@@ -132,35 +135,30 @@ export class ClipResizeEditor extends InnerEditor {
     this.editor.remove(this.view)
   }
 
-  getScale() {
-    return this.editor.app.zoomLayer.scaleX ?? 1
-  }
-
-  // 尺寸修改比较特殊，只需要修改编辑框、预览元素的尺寸，松手后才改变目标元素尺寸
   onScale(e: DragEvent) {
-    console.log('scale xxx', e)
-    const element = this.clipUI
-    let { around, lockRatio, flipable, editSize } = this.editor.mergeConfig
-
+    const target = this.clipUI
+    let { lockRatio } = this.editor.mergeConfig
     const { direction } = e.current as IEditPoint
-
-    if (e.shiftKey || element.lockRatio)
+    if (e.shiftKey || target.lockRatio)
       lockRatio = true
 
-    const data = EditDataHelper.getScaleData(element, this.myEditBox.dragStartData.bounds, direction, e.getInnerTotal(element), lockRatio, EditDataHelper.getAround(around, e.altKey), flipable, editSize === 'scale')
-
+    const data = EditDataHelper.getScaleData(
+      target,
+      this.myEditBox.dragStartData.bounds,
+      direction,
+      e.getInnerTotal(target),
+      lockRatio,
+      null,
+      false,
+      false,
+    )
+    // console.log(data.origin, data.scaleX, data.scaleY)
     this.doScaleOf(data.origin, data.scaleX, data.scaleY)
-    // if (this.editTool.onScaleWithDrag) {
-    //   data.drag = e
-    //   this.scaleWithDrag(data)
-    // } else {
-    //   this.scaleOf(data.origin, data.scaleX, data.scaleY)
-    // }
   }
 
   doScaleOf(origin: IPointData | IAlign, scaleX: number, scaleY = scaleX, _resize?: boolean): void {
     const target = this.clipUI
-    const worldOrigin = this.getWorldOrigin(origin)
+    const worldOrigin = this.getWorldOrigin(this.previewTarget, origin)
     const data: IEditorScaleEvent = {
       target,
       editor: this.editor,
@@ -173,15 +171,15 @@ export class ClipResizeEditor extends InnerEditor {
   }
 
   scale(event: IEditorScaleEvent) {
-    const { target, scaleX, scaleY, worldOrigin, editor } = event
-    this.clipUI.resizeChildren = false
+    const { scaleX, scaleY, worldOrigin, editor } = event
+    const target = this.clipUI
     const { app } = editor
     app.lockLayout()
-    const resize = editor.getEditSize(target) !== 'scale'
-    this.clipUI.scaleOfWorld(worldOrigin, scaleX, scaleY, resize)
-    this.onUpdate()
+    target.resizeChildren = false
+    target.scaleOfWorld(worldOrigin, scaleX, scaleY, true)
+    target.resizeChildren = true
     app.unlockLayout()
-    this.clipUI.resizeChildren = true
+    this.onUpdate()
   }
 
   onRotate(e: DragEvent | RotateEvent) {
@@ -190,17 +188,13 @@ export class ClipResizeEditor extends InnerEditor {
     const { rotateGap } = mergeConfig
 
     const { dragStartData } = this.myEditBox
-    const origin = {} as IPointData
     let rotation: number
 
     // 计算预览区域的旋转数据, 旋转的时候，不管图片如何偏移，应该总是按照预览元素的中心点旋转
     const pt = this.previewTarget
-    AroundHelper.toPoint('center', pt.boxBounds, origin, true)
-    rotation = PointHelper.getRotation(
-      pt.getBoxPoint(dragStartData),
-      origin,
-      e.getBoxPoint(pt),
-    )
+
+    const data = EditDataHelper.getRotateData(pt.boxBounds, 5, e.getBoxPoint(pt), pt.getBoxPoint(dragStartData), e.shiftKey ? null : ('center'))
+    rotation = data.rotation
 
     if (pi.scaleX * pi.scaleY < 0)
       rotation = -rotation // flippedOne
@@ -211,12 +205,12 @@ export class ClipResizeEditor extends InnerEditor {
     if (!rotation)
       return
 
-    this.doRotateOf(origin, rotation)
+    this.doRotateOf(data.origin, rotation)
   }
 
   doRotateOf(origin: IPointData | IAlign, rotation: number): void {
     const target = this.previewInner
-    const worldOrigin = this.getWorldOrigin(origin)
+    const worldOrigin = this.getWorldOrigin(this.previewTarget, origin)
     const data: IEditorRotateEvent = {
       target,
       editor: this.editor,
@@ -227,9 +221,8 @@ export class ClipResizeEditor extends InnerEditor {
     this.rotate(data)
   }
 
-  protected getWorldOrigin(origin: IPointData | IAlign): IPointData {
-    const element = this.previewTarget
-    return element.getWorldPoint(LeafHelper.getInnerOrigin(element, origin))
+  protected getWorldOrigin(target: IUI, origin: IPointData | IAlign): IPointData {
+    return target.getWorldPoint(LeafHelper.getInnerOrigin(target, origin))
   }
 
   rotate(e: IEditorRotateEvent) {
@@ -237,8 +230,8 @@ export class ClipResizeEditor extends InnerEditor {
     const { rotation, worldOrigin } = e
     app.lockLayout()
     this.clipInner.rotateOfWorld(worldOrigin, rotation)
-    this.onUpdate()
     app.unlockLayout()
+    this.onUpdate()
   }
 
   onMove(e: DragEvent | MoveEvent): void {
@@ -291,8 +284,8 @@ export class ClipResizeEditor extends InnerEditor {
     app.lockLayout()
     const total = { x: e.moveX, y: e.moveY }
     this.clipInner.moveWorld(total)
-    this.onUpdate()
     app.unlockLayout()
+    this.onUpdate()
   }
 
   closeInnerEditor() {
@@ -302,6 +295,7 @@ export class ClipResizeEditor extends InnerEditor {
     this.editor.off_(this.eventIds)
     this.eventIds = []
     this.myEditBox.unload()
+    this.recoveryKeyEventFun()
   }
 
   onDestroy() {

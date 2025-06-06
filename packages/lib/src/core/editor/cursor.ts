@@ -1,7 +1,7 @@
 import type { IEditBox, IEditor } from '@leafer-in/interface'
 import type { IObject, IUIEvent } from '@leafer-ui/interface'
-import { EditDataHelper } from '@leafer-in/editor'
 import { MathHelper } from '@leafer-ui/core'
+import { EditDataHelper } from '../tool/EditDataHelper'
 
 const cacheCursors: IObject = {}
 

@@ -16,10 +16,9 @@ import type {
   IUnitPointData,
 } from '@leafer-ui/interface'
 import type { ClipResizeEditor } from '../index'
-import { EditDataHelper } from '@leafer-in/editor'
-
 import { AroundHelper, Box, DragEvent, Group, PointerEvent, ResizeEvent } from '@leafer-ui/core'
 import { updateCursor, updateMoveCursor } from '../editor/cursor'
+import { EditDataHelper } from '../tool/EditDataHelper'
 import { EditPoint } from './EditPoint'
 
 const fourDirection = ['top', 'right', 'bottom', 'left']
