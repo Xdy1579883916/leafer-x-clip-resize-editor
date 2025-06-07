@@ -149,7 +149,6 @@ export class ClipResizeEditor extends InnerEditor {
       false,
       false,
     )
-    // console.log(data.origin, data.scaleX, data.scaleY)
     this.doScaleOf(data.origin, data.scaleX, data.scaleY)
   }
 

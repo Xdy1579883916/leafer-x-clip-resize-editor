@@ -13,8 +13,6 @@ export const EditDataHelper = {
     let scaleX: number = 1
     let scaleY: number = 1
 
-    console.log('getScaleData')
-
     const { boxBounds, widthRange, heightRange, dragBounds, worldBoxBounds } = element
     const { width, height } = startBounds
 
