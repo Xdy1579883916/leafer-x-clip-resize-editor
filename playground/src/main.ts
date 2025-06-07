@@ -75,7 +75,7 @@ const size = {
   height: 319.7226848187476,
 }
 const ui = new ClipImage({
-  url: 'https://tjl-upload.oss-cn-shanghai.aliyuncs.com/tjl/files/1e5/de8/8f1/u2BTySTK9AoPVt0Nl4Tmh9DrPsSRDdHG_1749094355149.jpg',
+  url: '/static/test.jpg',
   clip: {
     x: -112.06774519440373,
     y: -168.10161779156934,
@@ -83,14 +83,19 @@ const ui = new ClipImage({
     height: 618.0206536450227,
     rotation: 53,
   },
-  width: 242.67610999773487,
-  height: 319.7226848187476,
-  id: 'u2xNLkNJJrtztXjhgYxgCsRxppmAUQ6h',
+  ...size,
   x: (innerWidth - size.width) / 2,
   y: (innerHeight - size.height) / 2,
   editable: true,
 })
 
+// 最简创建, 默认无剪裁
+const ui2 = new ClipImage({
+  url: '/static/test2.jpg',
+  editable: true,
+})
+
 app.tree.add(ui)
+app.tree.add(ui2)
 
 ;(window as any).app = app

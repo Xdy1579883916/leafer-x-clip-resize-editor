@@ -8,7 +8,7 @@ import type {
   IString,
   IUIJSONData,
 } from '@leafer-ui/interface'
-import { boundsType, Box, BoxData, dataProcessor, Image, registerUI, surfaceType } from '@leafer-ui/core'
+import { boundsType, Box, BoxData, dataProcessor, Image, ImageEvent, registerUI, surfaceType } from '@leafer-ui/core'
 
 interface IClipAttr {
   x?: number
@@ -25,11 +25,12 @@ export interface IClipImageAttrs {
 
 export interface IClipImage extends IClipImageAttrs, IBox {
   __: IClipImageData
-  readonly layerImg?: IImage
+  layerImg?: IImage
 }
 
 export interface IClipImageData extends IClipImageAttrs, IBoxData {
   layerImg?: IImage
+  __updateLayerImg: () => void
 }
 
 export interface IClipImageInputData extends IClipImageAttrs, IBoxInputData {
@@ -39,32 +40,43 @@ export interface IClipImageInputData extends IClipImageAttrs, IBoxInputData {
 export class ClipImageData extends BoxData implements IClipImageData {
   declare public __leaf: IClipImage
 
+  layerImg = new Image()
+
   _url?: string
-
-  setUrl(value: string) {
-    const { width, height } = this.__leaf
-    this.__leaf.__.layerImg = new Image({
-      url: value,
-      x: 0,
-      y: 0,
-      width,
-      height,
-      rotation: 0,
-      origin: 'center',
-    })
-    this._url = value
-  }
-
   _clip?: IClipAttr
 
-  setClip(value: IClipAttr) {
+  protected setUrl(value: string) {
+    this._url = value
+    this.__updateLayerImg()
+  }
+
+  protected setClip(value: IClipAttr) {
+    const { layerImg } = this
     this._clip = value || {}
-    this.__leaf.__.layerImg.set(value)
+    if (layerImg) {
+      layerImg.set(this._clip)
+    }
+  }
+
+  __updateLayerImg() {
+    const { _width, _height, layerImg } = this
+    if (layerImg && this._url) {
+      layerImg.set({
+        url: this._url,
+        x: 0,
+        y: 0,
+        width: _width,
+        height: _height,
+        rotation: 0,
+        origin: 'center',
+        ...(this._clip || {}),
+      })
+    }
   }
 
   public __getInputData(): IObject {
     const data = super.__getInputData()
-    const { x, y, width, height, rotation } = this.__leaf.__.layerImg
+    const { x, y, width, height, rotation } = this.__leaf.layerImg
     return {
       ...data,
       clip: { x, y, width, height, rotation },
@@ -83,34 +95,64 @@ export class ClipImage extends Box implements IClipImage {
 
   // 图片链接 同Image元素
   @boundsType('')
-  public url?: IString
+  declare public url?: IString
 
   // 裁剪的数据
   @surfaceType()
-  public clip?: IClipAttr
+  declare public clip?: IClipAttr
 
   public get layerImg(): IImage {
     return this.__.layerImg
   }
 
-  constructor(data: IClipImageInputData) {
+  constructor({ clip, ...data }: IClipImageInputData = {}) {
+    if (!clip) {
+      clip = {
+        x: 0,
+        y: 0,
+        width: data.width,
+        height: data.height,
+        rotation: 0,
+      }
+    }
+
     super({
       ...data,
+      clip,
       overflow: 'hide',
       resizeChildren: true,
-    })
-    this.set({
-      children: [
-        this.layerImg,
-      ],
-    })
+    } as IClipImageInputData)
+
+    // 未设置宽高时 主动更新元素宽高
+    if (!data.width && !data.height) {
+      this.layerImg.once(ImageEvent.LOADED, (e: ImageEvent) => {
+        const size = {
+          width: e.image.width,
+          height: e.image.height,
+        }
+        this.set(size)
+        this.layerImg.set(size)
+      })
+    }
+    // 添加为子元素
+    if (this.layerImg) {
+      this.add(this.layerImg)
+    }
+    this.__.__updateLayerImg()
   }
 
   toJSON(options?: IJSONOptions): IUIJSONData {
     const data = super.toJSON(options)
-    delete data.children
-    delete data.overflow
-    delete data.resizeChildren
-    return data
+    // 只删除我们不想序列化的属性
+    const { children, overflow, resizeChildren, ...cleanData } = data
+    return cleanData
+  }
+
+  public destroy(): void {
+    if (this.layerImg) {
+      this.layerImg.destroy()
+      this.__.layerImg = null
+    }
+    super.destroy()
   }
 }
