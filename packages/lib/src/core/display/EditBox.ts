@@ -1,4 +1,4 @@
-import type { IEditBox, IEditor, IEditPoint, IEditPointType, IUIInputData } from '@leafer-in/interface'
+import type { IEditBox, IEditor, IEditPoint, IEditPointType, IMatrixData, IUIInputData } from '@leafer-in/interface'
 import type { Direction9 } from '@leafer-ui/core'
 import type {
   IAlign,
@@ -33,10 +33,17 @@ const lineDirectionData: IUnitPointData[] = [
 ]
 lineDirectionData.forEach(item => item.type = 'percent')
 
+interface IEditResizeStartData {
+  inner: {
+    transform_world: IMatrixData
+  }
+}
+
 export class EditBox extends Group implements IEditBox {
   public editor: IEditor
   public clipResizeEditor: ClipResizeEditor
   public dragging: boolean
+  public resizing: boolean
   public moving: boolean
 
   public view: IGroup = new Group() // 放置默认编辑工具控制点
@@ -68,6 +75,7 @@ export class EditBox extends Group implements IEditBox {
   public dragPoint: IEditPoint // 正在拖拽的控制点
 
   public dragStartData = {} as IEditorDragStartData
+  public resizeStartData = {} as IEditResizeStartData
 
   // fliped
   public get flipped(): boolean {
@@ -350,12 +358,21 @@ export class EditBox extends Group implements IEditBox {
     if (pointType && pointType.includes('rotate')) {
       this.updateAllLine({ visible: true })
     }
+    if (pointType && pointType.includes('resize')) {
+      this.resizing = true
+      this.resizeStartData = {
+        inner: {
+          transform_world: { ...clipResizeEditor.clipInner.getTransform('world') },
+        },
+      }
+    }
   }
 
   protected onDragEnd(e: DragEvent): void {
     this.dragging = false
-    this.dragPoint = null
+    this.resizing = false
     this.moving = false
+    this.dragPoint = null
     const { name, pointType } = e.current as IEditPoint
     if (name === 'rect') {
       this.updateAllPoint({ opacity: 1 })

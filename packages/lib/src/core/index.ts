@@ -3,7 +3,7 @@ import type { RotateEvent } from '@leafer-ui/core'
 import type { IAlign, IImage, IPointData, IUI } from '@leafer-ui/interface'
 import type { ClipImage } from '../ui/ClipImage'
 import { InnerEditor, registerInnerEditor } from '@leafer-in/editor'
-import { Box, DragEvent, LeafHelper, MathHelper, MoveEvent, PointerEvent } from '@leafer-ui/core'
+import { Box, DragEvent, LeafHelper, MathHelper, Matrix, MoveEvent, PointerEvent } from '@leafer-ui/core'
 import { EditBox } from './display/EditBox'
 import { EditDataHelper } from './tool/EditDataHelper'
 
@@ -90,9 +90,6 @@ export class ClipResizeEditor extends InnerEditor {
   }
 
   updateEditBox() {
-    // if (this.myEditBox.dragging) {
-    //   // return
-    // }
     const targetLB = this.clipUI.getLayoutBounds('box', 'world', true)
     this.myEditBox.set(targetLB)
     this.myEditBox.update({
@@ -174,11 +171,16 @@ export class ClipResizeEditor extends InnerEditor {
     const { scaleX, scaleY, worldOrigin, editor } = event
     const target = this.clipUI
     const { app } = editor
+    const { resizeStartData } = this.myEditBox
+    const { transform_world } = resizeStartData.inner
     app.lockLayout()
     target.resizeChildren = false
     target.scaleOfWorld(worldOrigin, scaleX, scaleY, true)
     target.resizeChildren = true
     app.unlockLayout()
+    const matrx = new Matrix(transform_world)
+    matrx.divideParent(target.getTransform('world'))
+    this.clipInner.setTransform(matrx)
     this.onUpdate()
   }
 
