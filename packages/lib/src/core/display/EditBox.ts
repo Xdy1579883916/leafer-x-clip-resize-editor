@@ -9,14 +9,13 @@ import type {
   IEditorDragStartData,
   IEventListenerId,
   IGroup,
-  IKeyEvent,
   IPointData,
   IRect,
   IUI,
   IUnitPointData,
 } from '@leafer-ui/interface'
 import type { ClipResizeEditor } from '../index'
-import { AroundHelper, Box, DragEvent, Group, PointerEvent, ResizeEvent } from '@leafer-ui/core'
+import { AroundHelper, Box, DragEvent, Group, Image, Platform, PointerEvent, ResizeEvent } from '@leafer-ui/core'
 import { updateCursor, updateMoveCursor } from '../editor/cursor'
 import { EditDataHelper } from '../tool/EditDataHelper'
 import { EditPoint } from './EditPoint'
@@ -37,6 +36,23 @@ interface IEditResizeStartData {
   inner: {
     transform_world: IMatrixData
   }
+}
+
+const svgOpt = { w: 24, h: 6, shadow: 2 }
+function getPointSvgCenter() {
+  const { w, h, shadow } = svgOpt
+  return `<svg width="${w}" height="${h + shadow * 2}" viewBox="0 0 ${w} ${h + shadow}" style="filter: drop-shadow(0 0 2px rgba(0,0,0,0.3));" xmlns="http://www.w3.org/2000/svg">
+    <rect x="${shadow / 2}" y="${shadow / 2}" width="${w - shadow}" height="${h}" rx="${h / 2}" ry="${h / 2}" fill="#fff" />
+</svg>`
+}
+function getPointSvgOther(hasTop: boolean = true, hasLeft: boolean = true) {
+  const { w, h, shadow } = svgOpt
+  const top = hasTop ? `<rect x="${shadow}" y="${shadow}" width="${w - shadow}" height="${h}" rx="${h / 2}" ry="${h / 2}" fill="#fff" />` : ''
+  const left = hasLeft ? `<rect x="${shadow}" y="${shadow}" width="${h}" height="${w - shadow}" rx="${h / 2}" ry="${h / 2}" fill="#fff" />` : ''
+  return `<svg width="${w}" height="${w}" viewBox="0 0 ${w + shadow} ${w + shadow}" style="filter: drop-shadow(0 0 ${shadow}px rgba(0,0,0,0.3));" xmlns="http://www.w3.org/2000/svg">
+      ${top} 
+      ${left}
+  </svg>`
 }
 
 export class EditBox extends Group {
@@ -153,15 +169,47 @@ export class EditBox extends Group {
     const { stroke, strokeWidth } = mergeConfig
 
     const pointsStyle = this.getPointsStyle()
-    const middlePointsStyle = this.getMiddlePointsStyle()
 
     let resizeP: IRect
 
     for (let i = 0; i < 8; i++) {
       resizeP = resizePoints[i]
-      resizeP.set(this.getPointStyle((i % 2) ? middlePointsStyle[((i - 1) / 2) % middlePointsStyle.length] : pointsStyle[(i / 2) % pointsStyle.length]))
-      if (!(i % 2))
+      const { w, h, shadow } = svgOpt
+      if (i % 2) {
+        const svg = new Image({
+          name: 'resize-point-svg',
+          url: Platform.toURL(getPointSvgCenter(), 'svg'),
+          x: -(w) / 2,
+          y: -(h - shadow / 2),
+          width: w,
+          height: h + shadow * 2,
+        })
+        resizeP.set({
+          fill: '#ffffff00',
+          resizeChildren: true,
+          children: [svg],
+          overflow: 'hide',
+        })
+        resizeP.rotation = 0
+      }
+      else {
+        const svg = new Image({
+          name: 'resize-point-svg',
+          url: Platform.toURL(getPointSvgOther(true, true), 'svg'),
+          x: -(h - shadow / 2),
+          y: -(h - shadow / 2),
+          width: w,
+          height: w,
+        })
+        resizeP.set({
+          fill: '#ffffff00',
+          stroke: undefined,
+          resizeChildren: true,
+          children: [svg],
+          overflow: 'hide',
+        })
         resizeP.rotation = (i / 2) * 90
+      }
     }
 
     // rotate
@@ -176,15 +224,15 @@ export class EditBox extends Group {
   public update(bounds: IBoundsData): void {
     const { guidelines, rect, circle, buttons, resizePoints, rotatePoints, resizeLines, editor } = this
     const { mergeConfig, element, multiple, editMask } = editor
-    const { middlePoint, resizeable, rotateable, hideOnSmall, editBox, mask } = mergeConfig
+    const { middlePoint, resizeable, rotateable, editBox, mask } = mergeConfig
 
     this.visible = !element.locked
     editMask.visible = mask ? true : 0
 
     if (this.view.worldOpacity) {
       const { width, height } = bounds
-      const smallSize = typeof hideOnSmall === 'number' ? hideOnSmall : 10
-      const showPoints = editBox && !(hideOnSmall && width < smallSize && height < smallSize)
+      const smallSize = svgOpt.w * 3 + svgOpt.shadow * 2
+      const showPoints = editBox && !(width < smallSize && height < smallSize)
 
       const point = {} as IPointData
       let rotateP: IRect
@@ -209,13 +257,13 @@ export class EditBox extends Group {
 
           if (((i + 1) / 2) % 2) { // top, bottom
             resizeL.width = width
-            if (hideOnSmall && resizeP.width * 2 > width)
+            if (resizeP.width * 2 > width)
               resizeP.visible = false
           }
           else {
             resizeL.height = height
             resizeP.rotation = 90
-            if (hideOnSmall && resizeP.width * 2 > height)
+            if (resizeP.width * 2 > height)
               resizeP.visible = false
           }
         }
@@ -323,13 +371,6 @@ export class EditBox extends Group {
     return Array.isArray(point) ? point : [point]
   }
 
-  public getMiddlePointsStyle(): IBoxInputData[] {
-    const { middlePoint } = this.editor.mergeConfig
-    return Array.isArray(middlePoint) ? middlePoint : (middlePoint ? [middlePoint] : this.getPointsStyle())
-  }
-
-  // drag
-
   protected onDragStart(e: DragEvent): void {
     this.dragging = true
     const point = this.dragPoint = e.current as IEditPoint
@@ -391,6 +432,7 @@ export class EditBox extends Group {
       ...this.resizePoints,
       ...this.rotatePoints,
       ...this.resizeLines,
+      this.circle,
     ].forEach(v => v.set(data))
   }
 
@@ -411,30 +453,6 @@ export class EditBox extends Group {
       clipResizeEditor.onScale(e)
     }
     updateCursor(editor, this, e)
-  }
-
-  public onArrow(_e: IKeyEvent): void {
-    /* const { editor, clipResizeEditor } = this
-    if (editor.editing && editor.mergeConfig.keyEvent) {
-      let x = 0
-      let y = 0
-      const distance = e.shiftKey ? 10 : 1
-      switch (e.code) {
-        case 'ArrowDown':
-          y = distance
-          break
-        case 'ArrowUp':
-          y = -distance
-          break
-        case 'ArrowLeft':
-          x = -distance
-          break
-        case 'ArrowRight':
-          x = distance
-      }
-      if (x || y)
-        clipResizeEditor.move(x, y)
-    } */
   }
 
   public listenPointEvents(point: IEditPoint, type: IEditPointType, direction: Direction9): void {

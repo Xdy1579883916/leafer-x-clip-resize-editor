@@ -16,8 +16,17 @@ npm i leafer-x-clip-resize-inner-editor
 
 1. 添加了自定义元素 `ClipImage`（裁剪的必要元素）
 2. 实现：移动、缩放、旋转裁剪，支持图片拉伸
-3. 基于 innerEditor 开发规范开发，所以内部编辑器会继承相关的样式，支持双击开启/关闭内部编辑
+3. 基于 innerEditor 开发规范开发，支持双击开启/关闭内部编辑
 4. 详细使用方式移步 [[playground](playground/src/main.ts)]
+
+### 样式
+1. 基础线框样式和旋转按钮会继承配置的编辑器样式
+2. 其他控制点为表现出明显的裁剪,使用了新的裁剪样式
+### 截图示例
+<img alt="clip-style1.png" src="images/clip-style1.png" width="200"/>
+
+### GIF 示例
+<img alt="demo.gif" src="images/demo.gif" width="200"/>
 
 ## 快速使用
 ```ts
