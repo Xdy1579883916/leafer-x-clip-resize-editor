@@ -1,4 +1,4 @@
-import type { IEditBox, IEditor, IEditPoint, IEditPointType, IMatrixData, IUIInputData } from '@leafer-in/interface'
+import type { IEditor, IEditPoint, IEditPointType, IMatrixData, IUIInputData } from '@leafer-in/interface'
 import type { Direction9 } from '@leafer-ui/core'
 import type {
   IAlign,
@@ -39,7 +39,7 @@ interface IEditResizeStartData {
   }
 }
 
-export class EditBox extends Group implements IEditBox {
+export class EditBox extends Group {
   public editor: IEditor
   public clipResizeEditor: ClipResizeEditor
   public dragging: boolean

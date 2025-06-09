@@ -1,11 +1,12 @@
-import type { IEditBox, IEditor } from '@leafer-in/interface'
+import type { IEditor } from '@leafer-in/interface'
 import type { IObject, IUIEvent } from '@leafer-ui/interface'
+import type { EditBox } from '../display/EditBox'
 import { MathHelper } from '@leafer-ui/core'
 import { EditDataHelper } from '../tool/EditDataHelper'
 
 const cacheCursors: IObject = {}
 
-export function updateCursor(editor: IEditor, editBox: IEditBox, e: IUIEvent): void {
+export function updateCursor(editor: IEditor, editBox: EditBox, e: IUIEvent): void {
   const point = editBox.enterPoint
   if (!point || !editor.editing || !editBox.visible)
     return
@@ -42,7 +43,7 @@ export function updateCursor(editor: IEditor, editBox: IEditBox, e: IUIEvent): v
   }
 }
 
-export function updateMoveCursor(editor: IEditor, editBox: IEditBox): void {
+export function updateMoveCursor(editor: IEditor, editBox: EditBox): void {
   const { moveCursor } = editor.mergeConfig
   editBox.rect.cursor = moveCursor
 }

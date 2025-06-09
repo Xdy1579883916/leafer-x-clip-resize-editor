@@ -11,6 +11,7 @@
   "devDependencies": {
     "@cr/lib": "workspace:*",
     "@leafer-in/editor": "catalog:cli",
+    "@leafer-in/resize": "catalog:cli",
     "@leafer-in/view": "catalog:cli",
     "@leafer-in/viewport": "catalog:cli",
     "@tsconfig/node22": "catalog:cli",
