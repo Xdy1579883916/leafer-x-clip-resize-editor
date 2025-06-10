@@ -46,6 +46,9 @@ export class ClipImageData extends BoxData implements IClipImageData {
   _clip?: IClipAttr
 
   protected setUrl(value: string) {
+    if (value && value !== this._url) {
+      this._clip = ({})
+    }
     this._url = value
     this.__updateLayerImg()
   }
@@ -123,17 +126,18 @@ export class ClipImage extends Box implements IClipImage {
       resizeChildren: true,
     } as IClipImageInputData)
 
-    // 未设置宽高时 主动更新元素宽高
-    if (!data.width && !data.height) {
-      this.layerImg.once(ImageEvent.LOADED, (e: ImageEvent) => {
-        const size = {
-          width: e.image.width,
-          height: e.image.height,
-        }
+    // 监听图片加载
+    this.on(ImageEvent.LOADED, (e: ImageEvent) => {
+      const size = {
+        width: e.image.width,
+        height: e.image.height,
+      }
+      // 未设置宽高时 主动更新元素宽高
+      if (!data.width && !data.height) {
         this.set(size)
         this.layerImg.set(size)
-      })
-    }
+      }
+    })
     // 添加为子元素
     if (this.layerImg) {
       this.add(this.layerImg)

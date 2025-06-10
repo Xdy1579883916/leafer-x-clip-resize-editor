@@ -1,5 +1,5 @@
 import type { IEditPointInputData } from 'leafer-ui'
-import { ClipImage, ClipResizeEditor } from '@cr/lib'
+import { ClipImage, ClipResizeEditor, ClipResizeEditorEvent } from '@cr/lib'
 import { App, Debug } from 'leafer-ui'
 import '@leafer-in/editor'
 import '@leafer-in/viewport'
@@ -19,7 +19,7 @@ const basePoint: IEditPointInputData = {
   strokeWidth: 0.5,
 }
 const app = new App({
-  view: window,
+  view: document.getElementById('app'),
   editor: {
     editSize: 'size',
     lockRatio: 'corner',
@@ -70,6 +70,9 @@ const app = new App({
   },
 })
 
+const innerWidth = app.tree.width
+const innerHeight = app.tree.height
+
 const size = {
   width: 242.67610999773487,
   height: 319.7226848187476,
@@ -98,4 +101,7 @@ const ui2 = new ClipImage({
 app.tree.add(ui)
 app.tree.add(ui2)
 
+app.editor.on(ClipResizeEditorEvent.UPDATE_EDITOR_BOUNDS, (e: ClipResizeEditorEvent) => {
+  console.log(ClipResizeEditorEvent.UPDATE_EDITOR_BOUNDS, e)
+})
 ;(window as any).app = app

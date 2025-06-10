@@ -5,6 +5,7 @@ import type { ClipImage } from '../ui/ClipImage'
 import { InnerEditor, registerInnerEditor } from '@leafer-in/editor'
 import { Box, DragEvent, LeafHelper, MathHelper, Matrix, MoveEvent, PointerEvent } from '@leafer-ui/core'
 import { EditBox } from './display/EditBox'
+import { ClipResizeEditorEvent } from './event/event'
 import { EditDataHelper } from './tool/EditDataHelper'
 
 @registerInnerEditor()
@@ -98,6 +99,17 @@ export class ClipResizeEditor extends InnerEditor {
       width: targetLB.width,
       height: targetLB.height,
     })
+
+    this.editor.emitEvent(
+      new ClipResizeEditorEvent(ClipResizeEditorEvent.UPDATE_EDITOR_BOUNDS, {
+        target: this.clipUI,
+        editBounds4World: targetLB,
+        editBounds4Window: {
+          ...targetLB,
+          ...this.editor.leafer.getClientPointByWorld(targetLB),
+        },
+      }),
+    )
   }
 
   onUpdate() {
