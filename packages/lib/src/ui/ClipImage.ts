@@ -3,6 +3,7 @@ import type {
   IBoxData,
   IBoxInputData,
   IImage,
+  IImageInputData,
   IJSONOptions,
   IObject,
   IString,
@@ -26,11 +27,11 @@ export interface IClipImageAttrs {
 export interface IClipImage extends IClipImageAttrs, IBox {
   __: IClipImageData
   layerImg?: IImage
+  __updateLayerImg: (reset?: boolean) => void
 }
 
 export interface IClipImageData extends IClipImageAttrs, IBoxData {
   layerImg?: IImage
-  __updateLayerImg: () => void
 }
 
 export interface IClipImageInputData extends IClipImageAttrs, IBoxInputData {
@@ -46,35 +47,19 @@ export class ClipImageData extends BoxData implements IClipImageData {
   _clip?: IClipAttr
 
   protected setUrl(value: string) {
-    if (value && value !== this._url) {
-      this._clip = ({})
-    }
+    // 重设图片链接的时候对裁剪信息进行重置
+    const needRest = this._url && value && value !== this._url
     this._url = value
-    this.__updateLayerImg()
+    setTimeout(() => {
+      this.__leaf.__updateLayerImg(needRest)
+    }, 0)
   }
 
-  protected setClip(value: IClipAttr) {
-    const { layerImg } = this
-    this._clip = value || {}
-    if (layerImg) {
-      layerImg.set(this._clip)
-    }
-  }
-
-  __updateLayerImg() {
-    const { _width, _height, layerImg } = this
-    if (layerImg && this._url) {
-      layerImg.set({
-        url: this._url,
-        x: 0,
-        y: 0,
-        width: _width,
-        height: _height,
-        rotation: 0,
-        origin: 'center',
-        ...(this._clip || {}),
-      })
-    }
+  protected setClip(value?: IClipAttr) {
+    this._clip = value
+    setTimeout(() => {
+      this.__leaf.__updateLayerImg()
+    }, 0)
   }
 
   public __getInputData(): IObject {
@@ -126,23 +111,43 @@ export class ClipImage extends Box implements IClipImage {
       resizeChildren: true,
     } as IClipImageInputData)
 
-    // 监听图片加载
-    this.on(ImageEvent.LOADED, (e: ImageEvent) => {
-      const size = {
-        width: e.image.width,
-        height: e.image.height,
-      }
-      // 未设置宽高时 主动更新元素宽高
-      if (!data.width && !data.height) {
-        this.set(size)
-        this.layerImg.set(size)
-      }
-    })
-    // 添加为子元素
-    if (this.layerImg) {
-      this.add(this.layerImg)
+    // 未设置宽高时 主动更新元素宽高
+    if (!data.width && !data.height) {
+      // 监听图片加载
+      this.layerImg.once(ImageEvent.LOADED, (e: ImageEvent) => {
+        this.width = this.layerImg.width = e.image.width
+        this.height = this.layerImg.height = e.image.height
+      })
     }
-    this.__.__updateLayerImg()
+
+    // 添加为子元素
+    this.add(this.layerImg)
+
+    this.__updateLayerImg()
+  }
+
+  __updateLayerImg(reset?: boolean) {
+    const { url, width, height, clip, layerImg } = this
+
+    const inputImage: IImageInputData = {
+      url,
+      x: 0,
+      y: 0,
+      width,
+      height,
+      rotation: 0,
+      origin: 'center',
+    }
+
+    if (reset) {
+      layerImg.set(inputImage)
+    }
+    else if (layerImg && url) {
+      layerImg.set({
+        ...inputImage,
+        ...(clip || {}),
+      })
+    }
   }
 
   toJSON(options?: IJSONOptions): IUIJSONData {
