@@ -39,22 +39,6 @@ export class ClipResizeEditor extends InnerEditor {
 
   constructor(props: any) {
     super(props)
-
-    // 如果开启了键盘监听，则暂时关闭
-    if (this.editor.config.keyEvent) {
-      this.editor.config.keyEvent = false
-      this.recoveryKeyEventFun = () => {
-        this.editor.config.keyEvent = true
-      }
-    }
-
-    this.eventIds = [
-      this.editor.app.on_(PointerEvent.DOUBLE_TAP, ({ target }: PointerEvent) => {
-        if (target === this.editTarget || target?.parent === this.editTarget)
-          return
-        this.editor.closeInnerEditor()
-      }),
-    ]
   }
 
   get clipUI() {
@@ -69,7 +53,26 @@ export class ClipResizeEditor extends InnerEditor {
     return this.previewTarget.layerImg
   }
 
+  handleDbClick({ target }: PointerEvent) {
+    if (target === this.editTarget || target?.parent === this.editTarget) {
+      return
+    }
+    this.editor.closeInnerEditor()
+  }
+
   onLoad() {
+    // 如果开启了键盘监听，则暂时关闭
+    if (this.editor.config.keyEvent) {
+      this.editor.config.keyEvent = false
+      this.recoveryKeyEventFun = () => {
+        this.editor.config.keyEvent = true
+      }
+    }
+
+    this.eventIds = [
+      this.editor.on_(PointerEvent.DOUBLE_TAP, this.handleDbClick, this),
+    ]
+
     this.editTarget.visible = false
     // 去除 editor 的描边
     this.editor.selector.targetStroker.visible = false
@@ -82,9 +85,7 @@ export class ClipResizeEditor extends InnerEditor {
       y: 0,
       rotation: 0,
     }) as IImage
-    this.vmBox.set({
-      children: [this.vmInner],
-    })
+    this.vmBox.add(this.vmInner)
     this.view.addMany(this.vmBox, this.previewTarget, this.myEditBox)
     this.myEditBox.load()
     this.editor.add(this.view)
@@ -140,8 +141,6 @@ export class ClipResizeEditor extends InnerEditor {
 
   onUnload() {
     this.closeInnerEditor()
-    // 4. 卸载控制点
-    this.editor.remove(this.view)
   }
 
   onScale(e: DragEvent) {
@@ -303,26 +302,30 @@ export class ClipResizeEditor extends InnerEditor {
 
   closeInnerEditor() {
     this.editTarget.visible = true
-    // 去除 editor 的描边
     this.editor.selector.targetStroker.visible = true
     this.editor.off_(this.eventIds)
     this.eventIds = []
+    this.view.removeAll()
     this.myEditBox.unload()
     this.recoveryKeyEventFun()
+    this.editor.remove(this.view)
   }
 
   onDestroy() {
-    [
+    this.handleDestroy([
       this.vmInner,
       this.vmBox,
       this.previewTarget,
       this.bakData,
-      this.view,
       this.myEditBox,
-    ].forEach((v) => {
-      v.destroy()
-      v = null
-    })
+    ])
     super.onDestroy()
+  }
+
+  handleDestroy(uis: IUI[]) {
+    uis.forEach((ui) => {
+      ui.destroy()
+      ui = null
+    })
   }
 }
