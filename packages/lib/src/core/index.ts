@@ -306,6 +306,7 @@ export class ClipResizeEditor extends InnerEditor {
     this.editor.off_(this.eventIds)
     this.eventIds = []
     this.view.removeAll()
+    this.vmBox.removeAll()
     this.myEditBox.unload()
     this.recoveryKeyEventFun()
     this.editor.remove(this.view)
