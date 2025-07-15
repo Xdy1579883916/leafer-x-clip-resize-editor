@@ -61,6 +61,13 @@ export class ClipResizeEditor extends InnerEditor {
   }
 
   onLoad() {
+    this.editor.emitEvent(
+      new ClipResizeEditorEvent(ClipResizeEditorEvent.BEFORE_START, {
+        target: undefined,
+        editBounds4World: undefined,
+        editBounds4Window: undefined,
+      }),
+    )
     // 如果开启了键盘监听，则暂时关闭
     if (this.editor.config.keyEvent) {
       this.editor.config.keyEvent = false
@@ -89,6 +96,14 @@ export class ClipResizeEditor extends InnerEditor {
     this.view.addMany(this.vmBox, this.previewTarget, this.myEditBox)
     this.myEditBox.load()
     this.editor.add(this.view)
+
+    this.editor.emitEvent(
+      new ClipResizeEditorEvent(ClipResizeEditorEvent.START, {
+        target: this.clipUI,
+        editBounds4World: undefined,
+        editBounds4Window: undefined,
+      }),
+    )
   }
 
   updateEditBox() {
@@ -141,6 +156,13 @@ export class ClipResizeEditor extends InnerEditor {
 
   onUnload() {
     this.closeInnerEditor()
+    this.editor.emitEvent(
+      new ClipResizeEditorEvent(ClipResizeEditorEvent.END, {
+        target: undefined,
+        editBounds4World: undefined,
+        editBounds4Window: undefined,
+      }),
+    )
   }
 
   onScale(e: DragEvent) {

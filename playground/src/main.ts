@@ -101,7 +101,12 @@ const ui2 = new ClipImage({
 app.tree.add(ui)
 app.tree.add(ui2)
 
-app.editor.on(ClipResizeEditorEvent.UPDATE_EDITOR_BOUNDS, (e: ClipResizeEditorEvent) => {
-  console.log(ClipResizeEditorEvent.UPDATE_EDITOR_BOUNDS, e)
+app.editor.on([
+  ClipResizeEditorEvent.UPDATE_EDITOR_BOUNDS,
+  ClipResizeEditorEvent.BEFORE_START,
+  ClipResizeEditorEvent.START,
+  ClipResizeEditorEvent.END,
+], (e: ClipResizeEditorEvent) => {
+  console.log(e.type, e)
 })
 ;(window as any).app = app
