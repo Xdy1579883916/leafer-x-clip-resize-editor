@@ -7,6 +7,7 @@ import { Box, DragEvent, LeafHelper, MathHelper, Matrix, MoveEvent, PointerEvent
 import { EditBox } from './display/EditBox'
 import { ClipResizeEditorEvent } from './event/event'
 import { EditDataHelper } from './tool/EditDataHelper'
+import { toFixed } from './tool/util'
 
 @registerInnerEditor()
 export class ClipResizeEditor extends InnerEditor {
@@ -58,6 +59,76 @@ export class ClipResizeEditor extends InnerEditor {
       return
     }
     this.editor.closeInnerEditor()
+  }
+
+  // 按比例设置尺寸
+  updateClipRatio(ratio: string) {
+    if (!ratio)
+      return
+
+    // 解析比例字符串，例如 "16:9"
+    const [widthRatio, heightRatio] = ratio.split(':').map(Number)
+    if (!widthRatio || !heightRatio)
+      return
+
+    // 获取当前裁剪区域和预览目标的尺寸
+    const currentBounds = this.editTarget.getLayoutBounds('box', 'local')
+
+    // 计算新的宽度和高度，保持面积不变
+    const aspectRatio = widthRatio / heightRatio
+    let newWidth = Math.sqrt(currentBounds.width * currentBounds.height * aspectRatio)
+    let newHeight = newWidth / aspectRatio
+
+    // 确保新的尺寸不超过预览目标的尺寸
+    if (newWidth > currentBounds.width || newHeight > currentBounds.height) {
+      if (newWidth / currentBounds.width > newHeight / currentBounds.height) {
+        newWidth = currentBounds.width
+        newHeight = newWidth / aspectRatio
+      }
+      else {
+        newHeight = currentBounds.height
+        newWidth = newHeight * aspectRatio
+      }
+    }
+
+    this.updateClipSize(newWidth, newHeight, false)
+  }
+
+  // 按指定宽高设置尺寸
+  updateClipSize(w: number, h: number, lockRatio: boolean) {
+    const { width, height } = this.clipUI
+
+    if (lockRatio) {
+      const ratio = width / height
+      // 判断是哪个值发生了变化
+      if (w !== toFixed(width, 0)) {
+        // 如果宽度变化，根据宽度计算高度
+        h = w / ratio
+      }
+      else {
+        // 如果高度变化，根据高度计算宽度
+        w = h * ratio
+      }
+    }
+
+    // 计算缩放比例
+    const scaleX = w / width
+    const scaleY = h / height
+
+    // 初始化 resizeStartData，避免在 scale 方法中出现 undefined 错误
+    this.myEditBox.resizeStartData = {
+      inner: {
+        transform_world: { ...this.editTarget.getTransform('world') },
+      },
+    }
+
+    // 以中心点为基准进行缩放
+    this.doScaleOf('center', scaleX, scaleY)
+    // 让内部 clipInner 元素居中
+    this.clipInner.set({
+      x: (this.clipUI.width - this.clipInner.width) / 2,
+      y: (this.clipUI.height - this.clipInner.height) / 2,
+    })
   }
 
   onLoad() {
@@ -255,7 +326,7 @@ export class ClipResizeEditor extends InnerEditor {
     this.rotate(data)
   }
 
-  protected getWorldOrigin(target: IUI, origin: IPointData | IAlign): IPointData {
+  getWorldOrigin(target: IUI, origin: IPointData | IAlign): IPointData {
     return target.getWorldPoint(LeafHelper.getInnerOrigin(target, origin))
   }
 
