@@ -30,7 +30,7 @@ export class ClipResizeEditor extends InnerEditor {
   // 预览的图片
   previewTarget: ClipImage
 
-  bakData: any
+  bakData: ClipImage
 
   // 编辑器
   myEditBox = new EditBox(this)
@@ -155,7 +155,7 @@ export class ClipResizeEditor extends InnerEditor {
     // 去除 editor 的描边
     this.editor.selector.targetStroker.visible = false
     // 添加备份, 用于取消
-    this.bakData = this.clipUI.clone()
+    this.bakData = this.clipUI.clone() as ClipImage
     this.previewTarget = this.clipUI.clone({ visible: true }) as ClipImage
     this.vmInner = this.clipInner.clone({
       opacity: 0.5,
@@ -411,6 +411,14 @@ export class ClipResizeEditor extends InnerEditor {
     this.myEditBox.unload()
     this.recoveryKeyEventFun()
     this.editor.remove(this.view)
+  }
+
+  reset() {
+    const bak = this.bakData.getBounds()
+    this.clipUI.set({
+      clip: this.bakData.clip,
+      ...bak,
+    })
   }
 
   onDestroy() {
