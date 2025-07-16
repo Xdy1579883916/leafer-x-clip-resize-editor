@@ -64,10 +64,10 @@ export class ClipImageData extends BoxData implements IClipImageData {
 
   public __getInputData(): IObject {
     const data = super.__getInputData()
-    const { x, y, width, height, rotation } = this.__leaf.layerImg
+    const { x, y, width, height, rotation, scale } = this.__leaf.layerImg
     return {
       ...data,
-      clip: { x, y, width, height, rotation },
+      clip: { x, y, width, height, rotation, scale },
     }
   }
 }
