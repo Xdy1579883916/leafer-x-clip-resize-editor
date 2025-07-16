@@ -71,15 +71,15 @@ export class ClipResizeEditor extends InnerEditor {
     if (!widthRatio || !heightRatio)
       return
 
-    // 获取当前裁剪区域和预览目标的尺寸
-    const currentBounds = this.editTarget.getLayoutBounds('box', 'local')
+    // 获取初始化时的裁剪区域尺寸
+    const currentBounds = this.bakData.getLayoutBounds('box', 'local')
 
-    // 计算新的宽度和高度，保持面积不变
+    // 计算新的宽度和高度
     const aspectRatio = widthRatio / heightRatio
     let newWidth = Math.sqrt(currentBounds.width * currentBounds.height * aspectRatio)
     let newHeight = newWidth / aspectRatio
 
-    // 确保新的尺寸不超过预览目标的尺寸
+    // 确保新的尺寸不超过 初始化时的裁剪区域尺寸
     if (newWidth > currentBounds.width || newHeight > currentBounds.height) {
       if (newWidth / currentBounds.width > newHeight / currentBounds.height) {
         newWidth = currentBounds.width
