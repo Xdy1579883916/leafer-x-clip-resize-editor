@@ -393,11 +393,19 @@ export class ClipResizeEditor extends InnerEditor {
     this.onUpdate()
   }
 
+  /**
+   * 清理事件监听器
+   * 外部可以主动调用此方法来清理事件监听器
+   */
+  clearEventListeners() {
+    this.editor.off_(this.eventIds)
+    this.eventIds = []
+  }
+
   closeInnerEditor() {
     this.editTarget.visible = true
     this.editor.selector.targetStroker.visible = true
-    this.editor.off_(this.eventIds)
-    this.eventIds = []
+    this.clearEventListeners()
     this.view.removeAll()
     this.vmBox.removeAll()
     this.myEditBox.unload()
