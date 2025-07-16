@@ -39,7 +39,7 @@ export interface IClipImageInputData extends IClipImageAttrs, IBoxInputData {
 
 // 数据处理器
 export class ClipImageData extends BoxData implements IClipImageData {
-  public __leaf: IClipImage
+  declare public __leaf: IClipImage
 
   layerImg = new Image()
 
@@ -79,15 +79,15 @@ export class ClipImage extends Box implements IClipImage {
   }
 
   @dataProcessor(ClipImageData)
-  public __: IClipImageData
+  declare public __: IClipImageData
 
   // 图片链接 同Image元素
   @boundsType('')
-  public url?: IString
+  declare public url?: IString
 
   // 裁剪的数据
   @surfaceType()
-  public clip?: IClipAttr
+  declare public clip?: IClipAttr
 
   public get layerImg(): IImage {
     return this.__.layerImg
